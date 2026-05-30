@@ -117,7 +117,7 @@ export default function SeatsQr() {
   const handleGenerateQRs = () => {
     if (selectedSeatIds.size === 0) return alert('Select at least one seat');
     const ids = Array.from(selectedSeatIds).join(',');
-    const url = `/print-qr?seatIds=${ids}`;
+    const url = `/print-qr?seatIds=${ids}&screenId=${selectedScreen}`;
     window.open(url, '_blank');
   };
 

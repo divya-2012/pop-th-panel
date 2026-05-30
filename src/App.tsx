@@ -6,6 +6,7 @@ import MenuManagement from './pages/MenuManagement';
 import LiveOrders from './pages/LiveOrders';
 import SeatsQr from './pages/SeatsQr';
 import Staff from './pages/Staff';
+import PrintQr from './pages/PrintQr';
 
 const ProtectedRoute = ({ children, allowedRoles }: { children: React.ReactNode, allowedRoles?: string[] }) => {
   if (!isAuthenticated()) return <Navigate to="/login" replace />;
@@ -49,6 +50,12 @@ export default function App() {
         <Route path="/staff" element={
           <ProtectedRoute allowedRoles={['THEATRE_ADMIN']}>
             <Staff />
+          </ProtectedRoute>
+        } />
+
+        <Route path="/print-qr" element={
+          <ProtectedRoute allowedRoles={['THEATRE_ADMIN']}>
+            <PrintQr />
           </ProtectedRoute>
         } />
 
