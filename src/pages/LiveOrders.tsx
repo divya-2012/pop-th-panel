@@ -13,7 +13,7 @@ interface Order {
   statusLogs?: Array<{ status: string; createdAt: string; notes: string | null }>;
 }
 
-const STATUS_TABS = ['ALL', 'PLACED', 'ACKNOWLEDGED', 'PREPARING', 'READY', 'DELIVERED', 'CLOSED'];
+const STATUS_TABS = ['ALL', 'PAYMENT_PENDING', 'PLACED', 'ACKNOWLEDGED', 'PREPARING', 'READY', 'DELIVERED', 'CLOSED'];
 const KANBAN_COLUMNS = ['PLACED', 'ACKNOWLEDGED', 'PREPARING', 'READY', 'DELIVERED'];
 
 const STATUS_COLORS: Record<string, string> = {
@@ -115,8 +115,8 @@ export default function LiveOrders() {
     } catch (err: any) { alert(err.response?.data?.message || 'Error'); }
   };
 
-  const filtered = activeTab === 'ALL' ? orders : orders.filter(o => o.status === activeTab);
-  const formatTime = (dateStr: string) => new Date(dateStr).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  const filtered = activeTab === 'ALL' ? orders.filter(o => o.status !== 'PAYMENT_PENDING') : orders.filter(o => o.status === activeTab);
+  const formatTime = (dateStr: string) => new Date(dateStr).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true });
 
   // Drag and drop handlers for Kanban
   const handleDragStart = (e: React.DragEvent, orderId: string) => {
@@ -179,6 +179,7 @@ export default function LiveOrders() {
 
   return (
     <DashboardLayout>
+      <div className="p-4 w-full h-full">
       {/* New Order Alert */}
       {newOrderAlert && (
         <div className="fixed top-4 right-4 z-[60] bg-white rounded-2xl border border-blue-100 shadow-xl shadow-blue-900/5 p-4 max-w-sm animate-in slide-in-from-right">
@@ -229,7 +230,7 @@ export default function LiveOrders() {
           <div className="flex gap-2 overflow-x-auto no-scrollbar mb-6 pb-2">
             {STATUS_TABS.map(tab => (
               <button key={tab} onClick={() => setActiveTab(tab)} className={`px-4 py-2 rounded-xl text-xs font-bold tracking-wide whitespace-nowrap transition-all ${activeTab === tab ? 'bg-gray-900 text-white shadow-md' : 'bg-white border border-gray-200 text-gray-600 hover:border-gray-300 hover:bg-gray-50'}`}>
-                {tab === 'ALL' ? `ALL (${orders.length})` : `${tab} (${orders.filter(o => o.status === tab).length})`}
+                {tab === 'ALL' ? `ALL (${orders.filter(o => o.status !== 'PAYMENT_PENDING').length})` : `${tab.replace('_', ' ')} (${orders.filter(o => o.status === tab).length})`}
               </button>
             ))}
           </div>
@@ -238,7 +239,7 @@ export default function LiveOrders() {
           </div>
         </>
       ) : (
-        <div className="flex gap-2 overflow-x-auto pb-2 h-[calc(100vh-140px)] no-scrollbar">
+        <div className="flex gap-2 w-full overflow-x-auto pb-2 h-[calc(100vh-120px)] no-scrollbar">
           {KANBAN_COLUMNS.map(column => {
             const columnOrders = orders.filter(o => o.status === column);
             return (
@@ -330,6 +331,7 @@ export default function LiveOrders() {
           </div>
         </div>
       )}
+      </div>
     </DashboardLayout>
   );
 }

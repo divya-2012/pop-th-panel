@@ -1,6 +1,6 @@
 import { ReactNode, useState, useEffect } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, UtensilsCrossed, ListOrdered, Armchair, LogOut, Users, ChevronLeft, ChevronRight, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
+import { LayoutDashboard, UtensilsCrossed, ListOrdered, Armchair, LogOut, Users, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import { clearAuth, getUser } from '../store/authStore';
 
 const THEATRE_ADMIN_NAV = [
