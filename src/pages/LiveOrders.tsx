@@ -71,6 +71,8 @@ export default function LiveOrders() {
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [newOrderAlert, setNewOrderAlert] = useState<Order | null>(null);
 
+  const pendingPaymentsCount = orders.filter(o => o.status === 'PAYMENT_PENDING').length;
+
   const fetchOrders = useCallback(async () => {
     try {
       const { data } = await api.get('/orders');
@@ -93,8 +95,12 @@ export default function LiveOrders() {
       setOrders(prev => prev.map(o => o.id === updatedOrder.id ? updatedOrder : o));
       if (selectedOrder?.id === updatedOrder.id) setSelectedOrder(updatedOrder);
     });
+    socket.on('new_pending_order', (order: Order) => {
+      setOrders(prev => [order, ...prev]);
+    });
     return () => {
       socket.off('new_order');
+      socket.off('new_pending_order');
       socket.off('order_status_update');
     };
   }, [soundEnabled, selectedOrder]);
@@ -133,7 +139,7 @@ export default function LiveOrders() {
       draggable={isDraggable}
       onDragStart={(e) => isDraggable && handleDragStart(e, order.id)}
       onClick={() => setSelectedOrder(order)}
-      className={`bg-white rounded-xl border p-4 transition-all cursor-pointer ${isDraggable ? 'cursor-grab active:cursor-grabbing hover:shadow-md' : 'hover:shadow-sm'} ${STATUS_COLORS[order.status] ? STATUS_COLORS[order.status].replace('bg-', 'hover:bg-opacity-50 border-').split(' ')[2] : 'border-gray-200'}`}
+      className={`bg-white rounded-md border p-3 transition-all cursor-pointer ${isDraggable ? 'cursor-grab active:cursor-grabbing hover:shadow-md' : 'hover:shadow-sm'} ${STATUS_COLORS[order.status] ? STATUS_COLORS[order.status].replace('bg-', 'hover:bg-opacity-50 border-').split(' ')[2] : 'border-gray-200'}`}
     >
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
@@ -189,20 +195,29 @@ export default function LiveOrders() {
         </div>
       )}
 
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Live Orders</h1>
-          <p className="text-sm font-medium text-gray-500 mt-1">{orders.length} total orders today</p>
+          <p className="text-sm font-medium text-gray-500 mt-1">{orders.filter(o => o.status !== 'PAYMENT_PENDING').length} total orders today</p>
         </div>
         <div className="flex items-center gap-3">
-          <button onClick={() => setSoundEnabled(!soundEnabled)} className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all ${soundEnabled ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}>
+          {/* Pending Payments Counter */}
+          <div className="flex items-center gap-2 bg-amber-50 border border-amber-200 text-amber-700 px-3 py-1.5 rounded-lg text-sm font-bold animate-in fade-in">
+            <span className="relative flex h-2 w-2">
+              {pendingPaymentsCount > 0 && <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>}
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
+            </span>
+            {pendingPaymentsCount} Pending Payment{pendingPaymentsCount !== 1 ? 's' : ''}
+          </div>
+
+          <button onClick={() => setSoundEnabled(!soundEnabled)} className={`flex items-center gap-2 px-4 py-1.5 rounded-lg text-sm font-bold transition-all ${soundEnabled ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}>
             {soundEnabled ? <Bell className="h-4 w-4" /> : <BellOff className="h-4 w-4" />} Sound
           </button>
-          <div className="flex bg-gray-100 p-1 rounded-xl">
-            <button onClick={() => setViewMode('list')} className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all ${viewMode === 'list' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>
+          <div className="flex bg-gray-100 p-1 rounded-lg">
+            <button onClick={() => setViewMode('list')} className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-bold transition-all ${viewMode === 'list' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>
               <LayoutList className="h-4 w-4" /> List
             </button>
-            <button onClick={() => setViewMode('kanban')} className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all ${viewMode === 'kanban' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>
+            <button onClick={() => setViewMode('kanban')} className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-bold transition-all ${viewMode === 'kanban' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>
               <KanbanSquare className="h-4 w-4" /> Kanban
             </button>
           </div>
@@ -223,13 +238,13 @@ export default function LiveOrders() {
           </div>
         </>
       ) : (
-        <div className="flex gap-4 overflow-x-auto pb-4 h-[calc(100vh-200px)]">
+        <div className="flex gap-2 overflow-x-auto pb-2 h-[calc(100vh-140px)] no-scrollbar">
           {KANBAN_COLUMNS.map(column => {
             const columnOrders = orders.filter(o => o.status === column);
             return (
               <div 
                 key={column} 
-                className="flex-shrink-0 w-80 bg-gray-50/80 rounded-2xl border border-gray-200/60 flex flex-col overflow-hidden"
+                className="flex-1 min-w-[220px] bg-gray-50/80 rounded-md border border-gray-200/60 flex flex-col overflow-hidden"
                 onDragOver={(e) => e.preventDefault()}
                 onDrop={(e) => handleDrop(e, column)}
               >
@@ -237,10 +252,10 @@ export default function LiveOrders() {
                   <h3 className={`text-xs font-bold tracking-wider ${STATUS_COLORS[column].split(' ')[1]}`}>{column}</h3>
                   <span className="bg-white px-2 py-0.5 rounded-full text-[10px] font-bold text-gray-500 shadow-sm border border-gray-100">{columnOrders.length}</span>
                 </div>
-                <div className="p-3 flex-1 overflow-y-auto space-y-3">
+                <div className="p-2 flex-1 overflow-y-auto space-y-2 no-scrollbar">
                   {columnOrders.map(order => <OrderCard key={order.id} order={order} isDraggable={true} />)}
                   {columnOrders.length === 0 && (
-                    <div className="h-24 border-2 border-dashed border-gray-200 rounded-xl flex items-center justify-center text-xs font-medium text-gray-400">Drop orders here</div>
+                    <div className="h-20 border-2 border-dashed border-gray-200 rounded-md flex items-center justify-center text-xs font-medium text-gray-400">Drop orders here</div>
                   )}
                 </div>
               </div>
